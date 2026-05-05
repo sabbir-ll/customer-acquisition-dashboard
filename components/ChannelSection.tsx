@@ -21,8 +21,6 @@ function findRow(rows: MetricRow[], ...keywords: string[]) {
 }
 
 export default function ChannelSection({ title, color, dim, rows, periods, periodIdx }: Props) {
-  if (rows.length === 0) return null;
-
   // Auto-detect key rows for charts
   const spendRow   = findRow(rows, "Spend");
   const roiRow     = findRow(rows, "ROI on Dollar");
@@ -78,6 +76,11 @@ export default function ChannelSection({ title, color, dim, rows, periods, perio
       </div>
 
       {/* KPI Cards — all rows from this section */}
+      {rows.length === 0 && (
+        <div className="rounded-xl border border-border bg-surface px-6 py-8 text-center text-subtle text-sm">
+          No data available for this section yet
+        </div>
+      )}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
         {rows.map((row) => (
           <KPICard

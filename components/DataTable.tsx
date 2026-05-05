@@ -55,7 +55,7 @@ export default function DataTable({ data, channels }: Props) {
           >
             All
           </button>
-          {channels.filter((ch) => data[ch.key].length > 0).map((ch) => (
+          {channels.map((ch) => (
             <button
               key={ch.key}
               onClick={() => setActiveKey(ch.key)}

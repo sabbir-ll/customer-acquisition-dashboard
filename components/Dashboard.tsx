@@ -74,8 +74,7 @@ export default function Dashboard({ data: initialData }: Props) {
     return () => clearInterval(id);
   }, [fetchLatest]);
 
-  // Only show channels that actually have data
-  const activeChannels = CHANNELS.filter((ch) => data[ch.key].length > 0);
+  const activeChannels = CHANNELS;
 
   return (
     <div className="min-h-screen bg-bg">
