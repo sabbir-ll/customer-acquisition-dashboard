@@ -130,7 +130,7 @@ export default function Dashboard({ data: initialData }: Props) {
               title={ch.title}
               color={ch.color}
               dim={ch.dim}
-              rows={data[ch.key]}
+              rows={data[ch.key] ?? []}
               periods={data.periods}
               periodIdx={periodIdx}
             />

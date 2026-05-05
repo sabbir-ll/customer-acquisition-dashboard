@@ -21,7 +21,7 @@ export default function DataTable({ data, channels }: Props) {
 
   // Flatten all rows with their channel meta
   const allRows = channels.flatMap((ch) =>
-    data[ch.key].map((r) => ({ ...r, channelKey: ch.key, channelColor: ch.color }))
+    (data[ch.key] ?? []).map((r) => ({ ...r, channelKey: ch.key, channelColor: ch.color }))
   );
 
   const filtered = allRows.filter((r) => {
