@@ -1,27 +1,18 @@
 "use client";
 
 import { MetricFormat } from "@/types/dashboard";
-import { formatValue, pctChange } from "@/lib/utils";
+import { formatValue } from "@/lib/utils";
 import { cn } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface Props {
   label: string;
   value: number | string | null;
-  prevValue?: number | string | null;
   format: MetricFormat;
   accent?: "blue" | "green";
   highlight?: boolean;
 }
 
-export default function KPICard({ label, value, prevValue, format, accent = "blue", highlight }: Props) {
-  const numVal = typeof value === "number" ? value : null;
-  const numPrev = typeof prevValue === "number" ? prevValue : null;
-  const pct = pctChange(numVal, numPrev);
-
-  const isUp = pct !== null && pct > 0;
-  const isDown = pct !== null && pct < 0;
-
+export default function KPICard({ label, value, format, accent = "blue", highlight }: Props) {
   return (
     <div
       className={cn(
@@ -52,17 +43,6 @@ export default function KPICard({ label, value, prevValue, format, accent = "blu
       >
         {formatValue(value, format)}
       </p>
-      {pct !== null && (
-        <div
-          className={cn(
-            "flex items-center gap-1 mt-2 text-xs font-medium",
-            isUp ? "text-emerald-400" : isDown ? "text-red-400" : "text-slate-500"
-          )}
-        >
-          {isUp ? <TrendingUp size={12} /> : isDown ? <TrendingDown size={12} /> : <Minus size={12} />}
-          <span>{isUp ? "+" : ""}{pct.toFixed(1)}% vs prev</span>
-        </div>
-      )}
     </div>
   );
 }

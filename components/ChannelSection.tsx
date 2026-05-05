@@ -45,8 +45,6 @@ export default function ChannelSection({ channel, rows, periods, periodIdx }: Pr
   const accentColor = isFb ? "#3b82f6" : "#22c55e";
   const dimColor = isFb ? "#1d4ed8" : "#15803d";
 
-  const prevIdx = periodIdx > 0 ? periodIdx - 1 : undefined;
-
   const spendKey = isFb ? "Facebook Spend" : "Google Spend";
   const meetKey = isFb ? "Qualified Facebook Meetings Set" : "Google Meetings Set";
   const hadKey = isFb ? "Facebook Mtgs Had" : "Google Mtg Had";
@@ -83,13 +81,11 @@ export default function ChannelSection({ channel, rows, periods, periodIdx }: Pr
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
         {kpis.map((kpi) => {
           const val = getValue(rows, kpi.label, periodIdx);
-          const prev = prevIdx !== undefined ? getValue(rows, kpi.label, prevIdx) : undefined;
           return (
             <KPICard
               key={kpi.label}
               label={kpi.label}
               value={val}
-              prevValue={prev}
               format={kpi.format}
               accent={accent}
               highlight={kpi.highlight}
