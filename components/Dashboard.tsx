@@ -1,17 +1,26 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { DashboardData } from "@/types/dashboard";
+import { DashboardData, ChannelMeta } from "@/types/dashboard";
 import PeriodSelector from "./PeriodSelector";
 import ChannelSection from "./ChannelSection";
 import DataTable from "./DataTable";
-import { RefreshCw, Database, Wifi } from "lucide-react";
+import { RefreshCw, Database } from "lucide-react";
 
 interface Props {
   data: DashboardData;
 }
 
-const POLL_INTERVAL = 30_000; // 30 seconds
+const POLL_INTERVAL = 30_000;
+
+export const CHANNELS: ChannelMeta[] = [
+  { key: "facebook",    title: "Facebook Ads",                           color: "#3b82f6", dim: "#1d4ed8" },
+  { key: "google",      title: "Google Ads",                             color: "#22c55e", dim: "#15803d" },
+  { key: "email",       title: "Email",                                  color: "#a78bfa", dim: "#7c3aed" },
+  { key: "conference",  title: "Conference",                             color: "#f59e0b", dim: "#d97706" },
+  { key: "bullseyeAds", title: "Bullseye Advertising Aggregate",         color: "#06b6d4", dim: "#0891b2" },
+  { key: "bullseyeAll", title: "Bullseye Aggregate — All Deals/Funnels", color: "#f97316", dim: "#ea580c" },
+];
 
 function buildGroups(periods: string[]) {
   const find = (label: string) => ({ label, idx: periods.indexOf(label) });
@@ -36,17 +45,15 @@ function buildGroups(periods: string[]) {
 }
 
 export default function Dashboard({ data: initialData }: Props) {
-  const [data, setData] = useState<DashboardData>(initialData);
+  const [data, setData]         = useState<DashboardData>(initialData);
   const [refreshing, setRefreshing] = useState(false);
   const [lastPoll, setLastPoll] = useState<Date>(new Date(initialData.lastUpdated));
 
-  const groups = buildGroups(data.periods);
+  const groups     = buildGroups(data.periods);
   const defaultIdx =
-    data.periods.indexOf("Q1 2026") >= 0
-      ? data.periods.indexOf("Q1 2026")
-      : data.periods.indexOf("Trailing 30 day") >= 0
-      ? data.periods.indexOf("Trailing 30 day")
-      : 0;
+    data.periods.indexOf("Q1 2026") >= 0     ? data.periods.indexOf("Q1 2026") :
+    data.periods.indexOf("Trailing 30 day") >= 0 ? data.periods.indexOf("Trailing 30 day") : 0;
+
   const [periodIdx, setPeriodIdx] = useState(defaultIdx);
 
   const fetchLatest = useCallback(async (showSpinner = false) => {
@@ -62,11 +69,13 @@ export default function Dashboard({ data: initialData }: Props) {
     }
   }, []);
 
-  // Auto-poll every 30 seconds
   useEffect(() => {
     const id = setInterval(() => fetchLatest(), POLL_INTERVAL);
     return () => clearInterval(id);
   }, [fetchLatest]);
+
+  // Only show channels that actually have data
+  const activeChannels = CHANNELS.filter((ch) => data[ch.key].length > 0);
 
   return (
     <div className="min-h-screen bg-bg">
@@ -88,18 +97,14 @@ export default function Dashboard({ data: initialData }: Props) {
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                   </span>
                   <p className="text-xs text-subtle">
-                    Live · updated {lastPoll.toLocaleTimeString()}
+                    Live · {lastPoll.toLocaleTimeString()}
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <PeriodSelector
-                groups={groups}
-                selected={periodIdx}
-                onChange={setPeriodIdx}
-              />
+              <PeriodSelector groups={groups} selected={periodIdx} onChange={setPeriodIdx} />
               <button
                 onClick={() => fetchLatest(true)}
                 disabled={refreshing}
@@ -116,31 +121,26 @@ export default function Dashboard({ data: initialData }: Props) {
       {/* Body */}
       <main className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-8 space-y-12">
         <div className="flex items-center gap-2 -mb-4">
-          <span className="text-2xl font-bold text-slate-100">
-            {data.periods[periodIdx] ?? "—"}
-          </span>
+          <span className="text-2xl font-bold text-slate-100">{data.periods[periodIdx] ?? "—"}</span>
           <span className="text-subtle text-sm">overview</span>
         </div>
 
-        <ChannelSection
-          channel="facebook"
-          rows={data.facebook}
-          periods={data.periods}
-          periodIdx={periodIdx}
-        />
+        {activeChannels.map((ch, i) => (
+          <div key={ch.key}>
+            <ChannelSection
+              title={ch.title}
+              color={ch.color}
+              dim={ch.dim}
+              rows={data[ch.key]}
+              periods={data.periods}
+              periodIdx={periodIdx}
+            />
+            {i < activeChannels.length - 1 && <div className="border-t border-border mt-12" />}
+          </div>
+        ))}
 
         <div className="border-t border-border" />
-
-        <ChannelSection
-          channel="google"
-          rows={data.google}
-          periods={data.periods}
-          periodIdx={periodIdx}
-        />
-
-        <div className="border-t border-border" />
-
-        <DataTable data={data} />
+        <DataTable data={data} channels={CHANNELS} />
 
         <footer className="text-center text-xs text-muted pb-4">
           Data sourced from Google Sheets · auto-refreshes every 30 seconds

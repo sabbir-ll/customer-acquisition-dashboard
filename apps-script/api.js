@@ -6,17 +6,25 @@
 //   2. Extensions → Apps Script
 //   3. Delete any existing code, paste this entire file
 //   4. Click "Deploy" → "New Deployment"
-//   5. Type: Web App
-//      Execute as: Me
-//      Who has access: Anyone
+//   5. Type: Web App | Execute as: Me | Who has access: Anyone
 //   6. Click Deploy → copy the Web App URL
 //   7. Add that URL as SHEET_API_URL in Vercel environment variables
 //
-// After any code change: Deploy → Manage Deployments → edit the
-// existing deployment (don't create a new one, URL stays the same).
+// To update after code changes:
+//   Deploy → Manage Deployments → edit existing (URL stays same)
 // ============================================================
 
 var SHEET_NAME = "Customer Acquisition Dash";
+
+// Row ranges (1-indexed, matching your actual sheet rows)
+var SECTIONS = [
+  { key: "facebook",    startRow: 3,   endRow: 28  },
+  { key: "google",      startRow: 30,  endRow: 45  },
+  { key: "email",       startRow: 47,  endRow: 62  },
+  { key: "conference",  startRow: 64,  endRow: 76  },
+  { key: "bullseyeAds", startRow: 95,  endRow: 110 },
+  { key: "bullseyeAll", startRow: 113, endRow: 124 },
+];
 
 function doGet(e) {
   try {
@@ -34,19 +42,15 @@ function doGet(e) {
 function getData() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(SHEET_NAME);
-
-  if (!sheet) {
-    throw new Error("Sheet not found: " + SHEET_NAME);
-  }
+  if (!sheet) throw new Error("Sheet not found: " + SHEET_NAME);
 
   var lastRow = sheet.getLastRow();
   var lastCol = sheet.getLastColumn();
 
-  // getDisplayValues returns the visible text exactly as in the cell
-  // (handles %, $, comma formatting, #DIV/0! errors, etc.)
+  // getDisplayValues returns visible text (handles $, %, #DIV/0!, etc.)
   var display = sheet.getRange(1, 1, lastRow, lastCol).getDisplayValues();
 
-  // Row index 1 = period headers (row 2 in the sheet)
+  // Row 2 (index 1) = period headers
   var headerRow = display[1] || [];
   var periods = [];
   for (var c = 1; c < headerRow.length; c++) {
@@ -54,36 +58,36 @@ function getData() {
     if (h) periods.push(h);
   }
 
-  var facebook = [];
-  var googleRows = [];
-  var section = "none";
-
-  for (var i = 2; i < display.length; i++) {
-    var row = display[i];
-    var label = trim(row[0]);
-    if (!label) continue;
-
-    if (label === "Facebook Spend") section = "fb";
-    else if (label === "Google Spend") section = "goog";
-
-    if (section === "none") continue;
-
-    var values = [];
-    for (var j = 0; j < periods.length; j++) {
-      values.push(parseVal(row[j + 1]));
-    }
-
-    var entry = { label: label, values: values };
-    if (section === "fb") facebook.push(entry);
-    else googleRows.push(entry);
-  }
-
-  return {
+  var result = {
     periods: periods,
-    facebook: facebook,
-    google: googleRows,
     lastUpdated: new Date().toISOString()
   };
+
+  // Parse each section by fixed row range
+  for (var s = 0; s < SECTIONS.length; s++) {
+    var sec = SECTIONS[s];
+    var rows = [];
+
+    for (var r = sec.startRow; r <= sec.endRow; r++) {
+      var rowIdx = r - 1; // convert to 0-indexed
+      if (rowIdx >= display.length) break;
+
+      var row = display[rowIdx];
+      var label = trim(row[0]);
+      if (!label) continue;
+
+      var values = [];
+      for (var j = 0; j < periods.length; j++) {
+        values.push(parseVal(row[j + 1]));
+      }
+
+      rows.push({ label: label, values: values });
+    }
+
+    result[sec.key] = rows;
+  }
+
+  return result;
 }
 
 function parseVal(raw) {
@@ -92,14 +96,11 @@ function parseVal(raw) {
   if (s === "" || s === "#DIV/0!" || s === "#VALUE!" || s === "#N/A" || s === "#REF!" || s === "#NAME?") {
     return null;
   }
-  // Remove $ and commas
   var cleaned = s.replace(/[$,]/g, "");
-  // Percentage  e.g. "29%"
   if (cleaned.charAt(cleaned.length - 1) === "%") {
     var pct = parseFloat(cleaned);
     return isNaN(pct) ? null : pct;
   }
-  // Multiplier  e.g. "7406.8x"
   if (cleaned.charAt(cleaned.length - 1) === "x") {
     var mult = parseFloat(cleaned);
     return isNaN(mult) ? null : mult;

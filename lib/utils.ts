@@ -69,6 +69,25 @@ export function getQuarterlyIndices(periods: string[]): number[] {
   return QUARTERLY_LABELS.map((l) => periods.indexOf(l)).filter((i) => i >= 0);
 }
 
+export function autoFormat(label: string): MetricFormat {
+  const l = label.toLowerCase();
+  if (l.includes("close rate") || l.includes("open rate") || l.includes("rate)") || l.endsWith("rate")) return "percent";
+  if (l.includes("ltv:cac") || l.includes("ltv to cac") || l.endsWith(":cac")) return "multiplier";
+  if (l.includes("roi on dollar") || l.includes("roi on $")) return "roi";
+  if (
+    l.includes("spend") || l.includes(" cost") || l.includes("(cac)") ||
+    l.includes("cpm ") || l.includes(" arr") || l.includes("ltv") ||
+    l.includes("revenue") || l.includes("value") || l.includes("cplp") ||
+    l.startsWith("cp ") || l.startsWith("avg ") || l.startsWith("cost per")
+  ) return "currency";
+  return "number";
+}
+
+export function autoHighlight(label: string): boolean {
+  const l = label.toLowerCase();
+  return l.includes("roi") || l.includes("ltv") || l.includes("close rate") || l.includes("total arr");
+}
+
 export function buildChartData(
   periods: string[],
   rows: MetricRow[],
