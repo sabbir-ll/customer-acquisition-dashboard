@@ -151,21 +151,27 @@ export default function Sidebar({ channels, active, onSelect, mobileOpen, onMobi
       {/* Collapse toggle + footer */}
       <div className={cn(
         "border-t border-border shrink-0 transition-all duration-300",
-        collapsed ? "px-2 py-3 flex justify-center" : "px-4 py-3"
+        collapsed ? "px-2 py-3 flex flex-col items-center gap-2" : "px-4 py-3 flex items-center gap-3"
       )}>
-        {!collapsed && (
-          <p className="text-[10px] text-muted mb-2">Powered by Google Sheets</p>
-        )}
+        {/* Collapse button */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="flex items-center justify-center h-8 w-8 rounded-lg bg-surface-2 border border-border text-subtle hover:text-primary hover:border-primary transition-all duration-150"
+          className={cn(
+            "flex items-center justify-center rounded-xl bg-surface-2 border border-border text-subtle hover:text-primary hover:border-primary hover:bg-primary/5 transition-all duration-150 shrink-0",
+            collapsed ? "h-9 w-9" : "h-8 w-8"
+          )}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {collapsed
-            ? <ChevronRight size={15} />
-            : <ChevronLeft  size={15} />
-          }
+          {collapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
         </button>
+
+        {/* Credit */}
+        {!collapsed && (
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold text-text-main truncate">Built by Sabbir Ahsan</p>
+            <p className="text-[10px] text-muted truncate">via Google Sheets</p>
+          </div>
+        )}
       </div>
     </aside>
   );
