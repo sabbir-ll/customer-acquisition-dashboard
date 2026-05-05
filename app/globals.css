@@ -2,40 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: dark;
-}
-
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
-  background-color: #080d1a;
-  color: #e2e8f0;
+  background-color: #F3FBF8;
+  color: #0B2518;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #0d1526;
-}
-::-webkit-scrollbar-thumb {
-  background: #1a2d4a;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #243d62;
-}
+::-webkit-scrollbar          { width: 5px; height: 5px; }
+::-webkit-scrollbar-track    { background: #EAF5EE; }
+::-webkit-scrollbar-thumb    { background: #8DCFB0; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #2DB88A; }
 
 .recharts-cartesian-grid-horizontal line,
-.recharts-cartesian-grid-vertical line {
-  stroke: #1a2d4a !important;
-}
-.recharts-tooltip-wrapper {
-  outline: none !important;
-}
+.recharts-cartesian-grid-vertical   line { stroke: #C5E5D4 !important; }
+.recharts-tooltip-wrapper { outline: none !important; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

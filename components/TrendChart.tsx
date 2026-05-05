@@ -13,7 +13,6 @@ interface Series {
   type: "bar" | "line" | "area";
   color: string;
   yAxisId?: string;
-  formatter?: (v: number) => string;
 }
 
 interface Props {
@@ -25,23 +24,21 @@ interface Props {
 
 const CustomTooltip = ({ active, payload, label }: {
   active?: boolean;
-  payload?: { name: string; value: number; color: string; unit?: string }[];
+  payload?: { name: string; value: number; color: string }[];
   label?: string;
 }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-[#111e36] border border-[#1a2d4a] rounded-lg p-3 shadow-xl text-xs">
-      <p className="text-slate-300 font-semibold mb-2">{label}</p>
+    <div className="bg-white border border-border rounded-xl p-3 shadow-lg text-xs">
+      <p className="font-semibold text-text-main mb-2">{label}</p>
       {payload.map((p) => (
         <div key={p.name} className="flex justify-between gap-4 py-0.5">
-          <span style={{ color: p.color }}>{p.name}</span>
-          <span className="font-mono text-slate-100 font-semibold">
+          <span style={{ color: p.color }} className="font-medium">{p.name}</span>
+          <span className="font-mono text-text-main font-semibold">
             {typeof p.value === "number"
-              ? p.value >= 1000
-                ? `$${(p.value / 1000).toFixed(0)}K`
-                : p.value < 10
-                ? p.value.toFixed(2)
-                : p.value.toFixed(0)
+              ? p.value >= 1000 ? `$${(p.value / 1000).toFixed(0)}K`
+              : p.value < 10    ? p.value.toFixed(2)
+              : p.value.toFixed(0)
               : p.value}
           </span>
         </div>
@@ -56,16 +53,16 @@ export default function TrendChart({ data, series, height = 240, dualAxis }: Pro
   return (
     <ResponsiveContainer width="100%" height={height}>
       <ComposedChart data={filtered} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1a2d4a" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#C5E5D4" />
         <XAxis
           dataKey="period"
-          tick={{ fill: "#64748b", fontSize: 11 }}
-          axisLine={{ stroke: "#1a2d4a" }}
+          tick={{ fill: "#5A8A70", fontSize: 11 }}
+          axisLine={{ stroke: "#C5E5D4" }}
           tickLine={false}
         />
         <YAxis
           yAxisId="left"
-          tick={{ fill: "#64748b", fontSize: 11 }}
+          tick={{ fill: "#5A8A70", fontSize: 11 }}
           axisLine={false}
           tickLine={false}
           tickFormatter={(v) => v >= 1000 ? `$${(v / 1000).toFixed(0)}K` : String(v)}
@@ -75,7 +72,7 @@ export default function TrendChart({ data, series, height = 240, dualAxis }: Pro
           <YAxis
             yAxisId="right"
             orientation="right"
-            tick={{ fill: "#64748b", fontSize: 11 }}
+            tick={{ fill: "#5A8A70", fontSize: 11 }}
             axisLine={false}
             tickLine={false}
             width={40}
@@ -83,7 +80,7 @@ export default function TrendChart({ data, series, height = 240, dualAxis }: Pro
         )}
         <Tooltip content={<CustomTooltip />} />
         <Legend
-          wrapperStyle={{ fontSize: 11, color: "#64748b", paddingTop: 8 }}
+          wrapperStyle={{ fontSize: 11, color: "#5A8A70", paddingTop: 8 }}
           iconType="circle"
           iconSize={8}
         />
@@ -97,7 +94,7 @@ export default function TrendChart({ data, series, height = 240, dualAxis }: Pro
                 name={s.label}
                 fill={s.color}
                 yAxisId={yId}
-                radius={[3, 3, 0, 0]}
+                radius={[4, 4, 0, 0]}
                 maxBarSize={40}
                 fillOpacity={0.85}
               />
@@ -110,7 +107,7 @@ export default function TrendChart({ data, series, height = 240, dualAxis }: Pro
               name={s.label}
               stroke={s.color}
               yAxisId={yId}
-              strokeWidth={2}
+              strokeWidth={2.5}
               dot={{ r: 3, fill: s.color, strokeWidth: 0 }}
               activeDot={{ r: 5 }}
               connectNulls
@@ -132,15 +129,15 @@ export function SparkAreaChart({ data, dataKey, color }: {
       <AreaChart data={data} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id={`grad-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-            <stop offset="95%" stopColor={color} stopOpacity={0} />
+            <stop offset="5%"  stopColor={color} stopOpacity={0.2} />
+            <stop offset="95%" stopColor={color} stopOpacity={0}   />
           </linearGradient>
         </defs>
         <Area
           type="monotone"
           dataKey="value"
           stroke={color}
-          strokeWidth={1.5}
+          strokeWidth={2}
           fill={`url(#grad-${dataKey})`}
           dot={false}
           connectNulls

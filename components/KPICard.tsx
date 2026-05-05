@@ -16,14 +16,20 @@ export default function KPICard({ label, value, format, color, highlight }: Prop
   return (
     <div
       className={cn(
-        "relative rounded-xl border p-4 transition-all duration-200",
-        highlight ? "" : "bg-surface border-border hover:border-border-bright"
+        "rounded-2xl border bg-surface p-4 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5",
+        highlight ? "" : "border-border"
       )}
-      style={highlight ? { background: `${color}12`, borderColor: `${color}45` } : undefined}
+      style={highlight ? { borderColor: `${color}50`, background: `${color}08` } : undefined}
     >
-      <p className="text-xs text-subtle uppercase tracking-wider font-medium truncate mb-2">{label}</p>
+      {highlight && (
+        <div
+          className="w-8 h-1 rounded-full mb-3"
+          style={{ background: color }}
+        />
+      )}
+      <p className="text-xs font-medium text-subtle truncate mb-1.5 leading-tight">{label}</p>
       <p
-        className={cn("text-2xl font-bold tabular-nums leading-none", !highlight && "text-slate-100")}
+        className={cn("text-xl font-bold tabular-nums leading-none", !highlight && "text-text-main")}
         style={highlight ? { color } : undefined}
       >
         {formatValue(value, format)}

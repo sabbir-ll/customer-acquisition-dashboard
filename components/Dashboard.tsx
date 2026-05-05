@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { DashboardData, ChannelMeta } from "@/types/dashboard";
+import Sidebar, { NavKey } from "./Sidebar";
 import PeriodSelector from "./PeriodSelector";
 import ChannelSection from "./ChannelSection";
 import DataTable from "./DataTable";
-import { RefreshCw, Database } from "lucide-react";
+import { RefreshCw, Menu, Table2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-interface Props {
-  data: DashboardData;
-}
+interface Props { data: DashboardData; }
 
 const POLL_INTERVAL = 30_000;
 
@@ -23,37 +23,32 @@ export const CHANNELS: ChannelMeta[] = [
 ];
 
 function buildGroups(periods: string[]) {
-  const find = (label: string) => ({ label, idx: periods.indexOf(label) });
-  const groups = [];
-
-  const current = [find("Trailing 7 day"), find("Trailing 30 day")].filter((o) => o.idx >= 0);
-  if (current.length) groups.push({ label: "Current", options: current });
-
-  const y2026 = [find("Q1 2026"), find("Q2 2026"), find("2026")].filter((o) => o.idx >= 0);
-  if (y2026.length) groups.push({ label: "2026", options: y2026 });
-
-  const y2025 = [find("Q1 2025"), find("Q2 2025"), find("Q3 2025"), find("Q4 2025"), find("2025")].filter((o) => o.idx >= 0);
-  if (y2025.length) groups.push({ label: "2025", options: y2025 });
-
-  const y2024 = [find("Q1 2024"), find("Q2 2024"), find("Q3 2024"), find("Q4 2024"), find("2024")].filter((o) => o.idx >= 0);
-  if (y2024.length) groups.push({ label: "2024", options: y2024 });
-
+  const find = (l: string) => ({ label: l, idx: periods.indexOf(l) });
+  const g = [];
+  const cur  = [find("Trailing 7 day"), find("Trailing 30 day")].filter((o) => o.idx >= 0);
+  if (cur.length)  g.push({ label: "Current",    options: cur });
+  const y26  = [find("Q1 2026"), find("Q2 2026"), find("2026")].filter((o) => o.idx >= 0);
+  if (y26.length)  g.push({ label: "2026",       options: y26 });
+  const y25  = [find("Q1 2025"), find("Q2 2025"), find("Q3 2025"), find("Q4 2025"), find("2025")].filter((o) => o.idx >= 0);
+  if (y25.length)  g.push({ label: "2025",       options: y25 });
+  const y24  = [find("Q1 2024"), find("Q2 2024"), find("Q3 2024"), find("Q4 2024"), find("2024")].filter((o) => o.idx >= 0);
+  if (y24.length)  g.push({ label: "2024",       options: y24 });
   const hist = [find("2023"), find("2022")].filter((o) => o.idx >= 0);
-  if (hist.length) groups.push({ label: "Historical", options: hist });
-
-  return groups;
+  if (hist.length) g.push({ label: "Historical", options: hist });
+  return g;
 }
 
 export default function Dashboard({ data: initialData }: Props) {
-  const [data, setData]         = useState<DashboardData>(initialData);
+  const [data, setData]           = useState<DashboardData>(initialData);
   const [refreshing, setRefreshing] = useState(false);
-  const [lastPoll, setLastPoll] = useState<Date>(new Date(initialData.lastUpdated));
+  const [lastPoll, setLastPoll]   = useState<Date>(new Date(initialData.lastUpdated));
+  const [activeNav, setActiveNav] = useState<NavKey>("overview");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const groups     = buildGroups(data.periods);
   const defaultIdx =
-    data.periods.indexOf("Q1 2026") >= 0     ? data.periods.indexOf("Q1 2026") :
+    data.periods.indexOf("Q1 2026")        >= 0 ? data.periods.indexOf("Q1 2026") :
     data.periods.indexOf("Trailing 30 day") >= 0 ? data.periods.indexOf("Trailing 30 day") : 0;
-
   const [periodIdx, setPeriodIdx] = useState(defaultIdx);
 
   const fetchLatest = useCallback(async (showSpinner = false) => {
@@ -74,77 +69,152 @@ export default function Dashboard({ data: initialData }: Props) {
     return () => clearInterval(id);
   }, [fetchLatest]);
 
-  const activeChannels = CHANNELS;
+  // Which channels to render in main area
+  const visibleChannels =
+    activeNav === "overview" ? CHANNELS :
+    activeNav === "table"    ? [] :
+    CHANNELS.filter((ch) => ch.key === activeNav);
+
+  const selectedPeriodLabel = groups.flatMap((g) => g.options).find((o) => o.idx === periodIdx)?.label ?? "—";
 
   return (
-    <div className="min-h-screen bg-bg">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-bg/80 backdrop-blur border-b border-border">
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1d4ed8]">
-                <Database size={16} className="text-white" />
-              </div>
-              <div>
-                <h1 className="text-base font-bold text-slate-100 leading-none">
-                  Customer Acquisition
-                </h1>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                  </span>
-                  <p className="text-xs text-subtle">
-                    Live · {lastPoll.toLocaleTimeString()}
-                  </p>
-                </div>
-              </div>
-            </div>
+    <div className="flex h-screen overflow-hidden bg-bg">
+      {/* Sidebar */}
+      <Sidebar
+        channels={CHANNELS}
+        active={activeNav}
+        onSelect={setActiveNav}
+        mobileOpen={mobileMenuOpen}
+        onMobileClose={() => setMobileMenuOpen(false)}
+      />
 
-            <div className="flex items-center gap-3">
-              <PeriodSelector groups={groups} selected={periodIdx} onChange={setPeriodIdx} />
+      {/* Right panel */}
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+
+        {/* ── Header ── */}
+        <header className="bg-surface border-b border-border px-4 sm:px-6 py-3 flex items-center gap-3 shrink-0">
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="lg:hidden flex items-center justify-center h-8 w-8 rounded-lg hover:bg-surface-2 text-subtle transition-colors"
+          >
+            <Menu size={18} />
+          </button>
+
+          {/* Title */}
+          <div className="mr-auto min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm font-bold text-text-main truncate">Customer Acquisition</h1>
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+              </span>
+              <span className="text-xs text-muted hidden sm:inline">{lastPoll.toLocaleTimeString()}</span>
+            </div>
+          </div>
+
+          {/* Period selector */}
+          <PeriodSelector groups={groups} selected={periodIdx} onChange={setPeriodIdx} />
+
+          {/* Refresh */}
+          <button
+            onClick={() => fetchLatest(true)}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface-2 border border-border text-subtle hover:text-text-main hover:border-border-bright transition-all disabled:opacity-50 shrink-0"
+          >
+            <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+        </header>
+
+        {/* ── Mobile nav tabs ── */}
+        <div className="lg:hidden flex overflow-x-auto border-b border-border bg-surface shrink-0 px-2 py-1.5 gap-1 no-scrollbar">
+          {(["overview", ...CHANNELS.map((c) => c.key), "table"] as NavKey[]).map((key) => {
+            const ch    = CHANNELS.find((c) => c.key === key);
+            const label = key === "overview" ? "All" : key === "table" ? "Table" : (ch?.title.split(" ")[0] ?? key);
+            const color = ch?.color;
+            const isActive = activeNav === key;
+            return (
               <button
-                onClick={() => fetchLatest(true)}
-                disabled={refreshing}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-surface border border-border text-subtle hover:text-slate-200 hover:border-border-bright transition-all disabled:opacity-50"
+                key={key}
+                onClick={() => setActiveNav(key)}
+                className={cn(
+                  "flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                  isActive ? "text-white shadow-sm" : "text-subtle bg-transparent hover:bg-surface-2"
+                )}
+                style={isActive ? { background: color ?? "#2DB88A" } : undefined}
               >
-                <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
-                Refresh
+                {label}
               </button>
+            );
+          })}
+        </div>
+
+        {/* ── Main content ── */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+
+          {/* Period + section heading */}
+          <div className="flex items-baseline gap-2 mb-6">
+            <h2 className="text-2xl font-bold text-text-main">{selectedPeriodLabel}</h2>
+            <span className="text-subtle text-sm font-medium">
+              {activeNav === "overview" ? "— all channels" :
+               activeNav === "table"    ? "— full metrics table" :
+               `— ${CHANNELS.find((c) => c.key === activeNav)?.title ?? ""}`}
+            </span>
+          </div>
+
+          {/* Channel sections */}
+          {visibleChannels.length > 0 && (
+            <div className="space-y-10">
+              {visibleChannels.map((ch, i) => (
+                <div key={ch.key}>
+                  <ChannelSection
+                    title={ch.title}
+                    color={ch.color}
+                    dim={ch.dim}
+                    rows={data[ch.key] ?? []}
+                    periods={data.periods}
+                    periodIdx={periodIdx}
+                  />
+                  {i < visibleChannels.length - 1 && (
+                    <div className="mt-10 border-t border-border" />
+                  )}
+                </div>
+              ))}
             </div>
-          </div>
-        </div>
-      </header>
+          )}
 
-      {/* Body */}
-      <main className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-8 space-y-12">
-        <div className="flex items-center gap-2 -mb-4">
-          <span className="text-2xl font-bold text-slate-100">{data.periods[periodIdx] ?? "—"}</span>
-          <span className="text-subtle text-sm">overview</span>
-        </div>
+          {/* Table view */}
+          {activeNav === "table" && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-2 border border-border">
+                  <Table2 size={15} className="text-subtle" />
+                </div>
+                <h3 className="text-base font-bold text-text-main">All Metrics</h3>
+              </div>
+              <DataTable data={data} channels={CHANNELS} />
+            </div>
+          )}
 
-        {activeChannels.map((ch, i) => (
-          <div key={ch.key}>
-            <ChannelSection
-              title={ch.title}
-              color={ch.color}
-              dim={ch.dim}
-              rows={data[ch.key] ?? []}
-              periods={data.periods}
-              periodIdx={periodIdx}
-            />
-            {i < activeChannels.length - 1 && <div className="border-t border-border mt-12" />}
-          </div>
-        ))}
+          {/* Table always appended to overview */}
+          {activeNav === "overview" && (
+            <div className="mt-10 pt-10 border-t border-border space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-2 border border-border">
+                  <Table2 size={15} className="text-subtle" />
+                </div>
+                <h3 className="text-base font-bold text-text-main">All Metrics</h3>
+              </div>
+              <DataTable data={data} channels={CHANNELS} />
+            </div>
+          )}
 
-        <div className="border-t border-border" />
-        <DataTable data={data} channels={CHANNELS} />
-
-        <footer className="text-center text-xs text-muted pb-4">
-          Data sourced from Google Sheets · auto-refreshes every 30 seconds
-        </footer>
-      </main>
+          <p className="text-center text-xs text-muted mt-10 pb-4">
+            Data sourced from Google Sheets · auto-refreshes every 30 seconds
+          </p>
+        </main>
+      </div>
     </div>
   );
 }

@@ -9,20 +9,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        bg: "#080d1a",
-        surface: "#0d1526",
-        "surface-2": "#111e36",
-        border: "#1a2d4a",
-        "border-bright": "#243d62",
-        fb: "#3b82f6",
-        "fb-dim": "#1d4ed8",
+        bg:              "#F3FBF8",
+        surface:         "#FFFFFF",
+        "surface-2":     "#EAF5EE",
+        border:          "#C5E5D4",
+        "border-bright": "#8DCFB0",
+        primary:         "#2DB88A",
+        "primary-dark":  "#1A9470",
+        "primary-light": "#5DCBA8",
+        "text-main":     "#0B2518",
+        subtle:          "#5A8A70",
+        muted:           "#96B8A6",
+        // channel accent colours (kept for charts / dots)
+        fb:   "#3b82f6",
         goog: "#22c55e",
-        "goog-dim": "#15803d",
-        muted: "#475569",
-        subtle: "#64748b",
-      },
-      fontFamily: {
-        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
     },
   },
