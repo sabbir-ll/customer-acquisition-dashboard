@@ -9,9 +9,7 @@ export async function getSheetData(): Promise<DashboardData> {
     return SAMPLE_DATA;
   }
 
-  const res = await fetch(APPS_SCRIPT_URL, {
-    next: { revalidate: 300 },
-  });
+  const res = await fetch(APPS_SCRIPT_URL, { cache: "no-store" });
 
   if (!res.ok) {
     throw new Error(`Apps Script returned ${res.status}`);

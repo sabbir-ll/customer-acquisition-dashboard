@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSheetData } from "@/lib/sheets";
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic"; // always fetch fresh, never cache
 
 export async function GET() {
   try {

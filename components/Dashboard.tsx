@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { DashboardData } from "@/types/dashboard";
 import PeriodSelector from "./PeriodSelector";
 import ChannelSection from "./ChannelSection";
 import DataTable from "./DataTable";
-import { RefreshCw, Database } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { RefreshCw, Database, Wifi } from "lucide-react";
 
 interface Props {
   data: DashboardData;
 }
+
+const POLL_INTERVAL = 30_000; // 30 seconds
 
 function buildGroups(periods: string[]) {
   const find = (label: string) => ({ label, idx: periods.indexOf(label) });
@@ -34,24 +35,38 @@ function buildGroups(periods: string[]) {
   return groups;
 }
 
-export default function Dashboard({ data }: Props) {
-  const router = useRouter();
-  const groups = buildGroups(data.periods);
-  const defaultIdx = data.periods.indexOf("Q1 2026") >= 0
-    ? data.periods.indexOf("Q1 2026")
-    : data.periods.indexOf("Trailing 30 day") >= 0
-    ? data.periods.indexOf("Trailing 30 day")
-    : 0;
-
-  const [periodIdx, setPeriodIdx] = useState(defaultIdx);
+export default function Dashboard({ data: initialData }: Props) {
+  const [data, setData] = useState<DashboardData>(initialData);
   const [refreshing, setRefreshing] = useState(false);
-  const isLive = !!(process.env.NEXT_PUBLIC_LIVE);
+  const [lastPoll, setLastPoll] = useState<Date>(new Date(initialData.lastUpdated));
 
-  async function refresh() {
-    setRefreshing(true);
-    router.refresh();
-    setTimeout(() => setRefreshing(false), 1500);
-  }
+  const groups = buildGroups(data.periods);
+  const defaultIdx =
+    data.periods.indexOf("Q1 2026") >= 0
+      ? data.periods.indexOf("Q1 2026")
+      : data.periods.indexOf("Trailing 30 day") >= 0
+      ? data.periods.indexOf("Trailing 30 day")
+      : 0;
+  const [periodIdx, setPeriodIdx] = useState(defaultIdx);
+
+  const fetchLatest = useCallback(async (showSpinner = false) => {
+    if (showSpinner) setRefreshing(true);
+    try {
+      const res = await fetch("/api/sheets", { cache: "no-store" });
+      if (!res.ok) return;
+      const fresh: DashboardData = await res.json();
+      setData(fresh);
+      setLastPoll(new Date(fresh.lastUpdated));
+    } finally {
+      if (showSpinner) setRefreshing(false);
+    }
+  }, []);
+
+  // Auto-poll every 30 seconds
+  useEffect(() => {
+    const id = setInterval(() => fetchLatest(), POLL_INTERVAL);
+    return () => clearInterval(id);
+  }, [fetchLatest]);
 
   return (
     <div className="min-h-screen bg-bg">
@@ -67,9 +82,15 @@ export default function Dashboard({ data }: Props) {
                 <h1 className="text-base font-bold text-slate-100 leading-none">
                   Customer Acquisition
                 </h1>
-                <p className="text-xs text-subtle mt-0.5">
-                  Updated {new Date(data.lastUpdated).toLocaleString()}
-                </p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  </span>
+                  <p className="text-xs text-subtle">
+                    Live · updated {lastPoll.toLocaleTimeString()}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -80,7 +101,7 @@ export default function Dashboard({ data }: Props) {
                 onChange={setPeriodIdx}
               />
               <button
-                onClick={refresh}
+                onClick={() => fetchLatest(true)}
                 disabled={refreshing}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-surface border border-border text-subtle hover:text-slate-200 hover:border-border-bright transition-all disabled:opacity-50"
               >
@@ -94,7 +115,6 @@ export default function Dashboard({ data }: Props) {
 
       {/* Body */}
       <main className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-8 space-y-12">
-        {/* Period label */}
         <div className="flex items-center gap-2 -mb-4">
           <span className="text-2xl font-bold text-slate-100">
             {data.periods[periodIdx] ?? "—"}
@@ -102,7 +122,6 @@ export default function Dashboard({ data }: Props) {
           <span className="text-subtle text-sm">overview</span>
         </div>
 
-        {/* Facebook */}
         <ChannelSection
           channel="facebook"
           rows={data.facebook}
@@ -112,7 +131,6 @@ export default function Dashboard({ data }: Props) {
 
         <div className="border-t border-border" />
 
-        {/* Google */}
         <ChannelSection
           channel="google"
           rows={data.google}
@@ -122,11 +140,10 @@ export default function Dashboard({ data }: Props) {
 
         <div className="border-t border-border" />
 
-        {/* Full table */}
         <DataTable data={data} />
 
         <footer className="text-center text-xs text-muted pb-4">
-          Data sourced from Google Sheets · Auto-refreshes every 5 min
+          Data sourced from Google Sheets · auto-refreshes every 30 seconds
         </footer>
       </main>
     </div>
